@@ -9,6 +9,10 @@ start dotnet run
 start dotnet run
 
 cd ..
+cd EventsLogger
+start dotnet run
+
+cd ..
 cd ..
 
 start nats\nats-server.exe

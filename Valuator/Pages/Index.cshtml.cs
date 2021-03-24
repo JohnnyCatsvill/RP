@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Text;
+using System.Text.Json;
 using Common;
 using Common.Storage;
+using Common.Structures;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.Logging;
@@ -44,6 +46,11 @@ namespace Valuator.Pages
                     }
                 }
                 _storage.Save(similarityKey, similarity.ToString());
+
+                LoggerData loggerData = new("similarity_calculated", id, similarity.ToString());
+                string dataToSend = JsonSerializer.Serialize(loggerData);
+       
+                _broker.Publish(Constants.BROKER_CHANNEL_EVENTS_LOGGER, Encoding.UTF8.GetBytes(dataToSend));
             }
 
             string textKey = Constants.TEXT_NAME + id;
@@ -52,7 +59,7 @@ namespace Valuator.Pages
 
             string rankKey = Constants.RANK_NAME + id;
             //TODO: посчитать rank и сохранить в БД по ключу rankKey
-            _broker.Publish(Constants.BROKER_CHANNEL, Encoding.UTF8.GetBytes(id));
+            _broker.Publish(Constants.BROKER_CHANNEL_FOR_RANK_CALCULATION, Encoding.UTF8.GetBytes(id));
 
             return Redirect($"summary?id={id}");
         }

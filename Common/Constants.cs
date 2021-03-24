@@ -9,6 +9,7 @@
         public const string TEXT_NAME = "TEXT-";
         public const string SIMILARITY_NAME = "SIMILARITY-";
 
-        public const string BROKER_CHANNEL = "calculate_rank";
+        public const string BROKER_CHANNEL_FOR_RANK_CALCULATION = "calculate_rank";
+        public const string BROKER_CHANNEL_EVENTS_LOGGER = "events_logger";
     }
 }

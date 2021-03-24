@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Text;
+using System.Text.Json;
 using Common;
 using Common.Storage;
+using Common.Structures;
 using NATS.Client;
 
 namespace RankCalculator
@@ -16,7 +18,7 @@ namespace RankCalculator
         {
             _storage = storage;
             _broker = new ConnectionFactory().CreateConnection();
-            _subscription = _broker.SubscribeAsync(Constants.BROKER_CHANNEL, CalculateRank);
+            _subscription = _broker.SubscribeAsync(Constants.BROKER_CHANNEL_FOR_RANK_CALCULATION, "queue", CalculateRank);
         }
 
         ~RankCalculator()
@@ -41,6 +43,10 @@ namespace RankCalculator
             double rank = (double)alphabeticLetters / (double)text.Length;
 
             _storage.Save(Constants.RANK_NAME + id, rank.ToString());
+
+            LoggerData loggerData = new LoggerData("rank_calculated", id, Convert.ToString(rank));
+            var dataToSend = JsonSerializer.Serialize(loggerData);
+            _broker.Publish(Constants.BROKER_CHANNEL_EVENTS_LOGGER, Encoding.UTF8.GetBytes(dataToSend));
         };
     }
 }
