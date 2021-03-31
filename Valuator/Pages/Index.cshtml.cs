@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Text;
 using System.Text.Json;
+using System.Threading;
 using Common;
 using Common.Storage;
 using Common.Structures;
@@ -26,26 +27,30 @@ namespace Valuator.Pages
 
         public void OnGet() { }
 
-        public IActionResult OnPost(string text)
+        public IActionResult OnPost(string text, string country)
         {
             _logger.LogDebug(text);
 
             string id = Guid.NewGuid().ToString();
 
+            _storage.SaveIdToRegion(id, country);
+
             string similarityKey = Constants.SIMILARITY_NAME + id;
             //TODO: посчитать similarity и сохранить в БД по ключу similarityKey
             {
                 int similarity = 0;
-                var keys = _storage.GetKeys(Constants.TEXT_NAME);
+                var keys = _storage.GetKeys(Constants.TEXT_NAME, country);
                 foreach(var key in keys)
                 {
-                    if (_storage.Load(key) == text)
+                    string key_id = key.Substring(key.IndexOf("-")+1);
+                    string key_obj = key.Substring(0, key.IndexOf("-")+1);
+                    if (_storage.Load(key_obj, key_id) == text)
                     {
                         similarity = 1;
                         break;
                     }
                 }
-                _storage.Save(similarityKey, similarity.ToString());
+                _storage.Save(Constants.SIMILARITY_NAME, id, similarity.ToString());
 
                 LoggerData loggerData = new("similarity_calculated", id, similarity.ToString());
                 string dataToSend = JsonSerializer.Serialize(loggerData);
@@ -55,11 +60,18 @@ namespace Valuator.Pages
 
             string textKey = Constants.TEXT_NAME + id;
             //TODO: сохранить в БД text по ключу textKey
-            _storage.Save(textKey, text);
+            _storage.Save(Constants.TEXT_NAME, id, text);
 
             string rankKey = Constants.RANK_NAME + id;
             //TODO: посчитать rank и сохранить в БД по ключу rankKey
             _broker.Publish(Constants.BROKER_CHANNEL_FOR_RANK_CALCULATION, Encoding.UTF8.GetBytes(id));
+
+
+            while(_storage.Load(Constants.RANK_NAME, id) == null)
+            {
+                Thread.Sleep(100);
+                return Redirect($"summary?id={id}");
+            }
 
             return Redirect($"summary?id={id}");
         }

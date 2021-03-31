@@ -30,7 +30,7 @@ namespace RankCalculator
         private EventHandler<MsgHandlerEventArgs> CalculateRank = (sender, args) =>
         {
             string id = Encoding.UTF8.GetString(args.Message.Data);
-            string text = _storage.Load(Constants.TEXT_NAME + id);
+            string text = _storage.Load(Constants.TEXT_NAME, id);
             
             int alphabeticLetters = 0;
             foreach (char ch in text)
@@ -42,7 +42,7 @@ namespace RankCalculator
             }
             double rank = (double)alphabeticLetters / (double)text.Length;
 
-            _storage.Save(Constants.RANK_NAME + id, rank.ToString());
+            _storage.Save(Constants.RANK_NAME, id, rank.ToString());
 
             LoggerData loggerData = new LoggerData("rank_calculated", id, Convert.ToString(rank));
             var dataToSend = JsonSerializer.Serialize(loggerData);
