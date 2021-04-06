@@ -31,7 +31,6 @@ namespace Valuator.Pages
             string id = Guid.NewGuid().ToString();
 
             string rankKey = RankName + id;
-            //TODO: посчитать rank и сохранить в БД по ключу rankKey
             int alphabeticLetters = 0;
             foreach (char ch in text)
             {
@@ -45,7 +44,6 @@ namespace Valuator.Pages
 
 
             string similarityKey = SimilarityName + id;
-            //TODO: посчитать similarity и сохранить в БД по ключу similarityKey
             int similarity = 0;
             var keys = db.GetKeys(TextName);
             foreach(var key in keys)
@@ -60,7 +58,6 @@ namespace Valuator.Pages
 
 
             string textKey = TextName + id;
-            //TODO: сохранить в БД text по ключу textKey
             db.Save(textKey, text);
 
             return Redirect($"summary?id={id}");
