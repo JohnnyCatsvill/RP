@@ -39,12 +39,10 @@ namespace Valuator.Pages
             //TODO: посчитать similarity и сохранить в БД по ключу similarityKey
             {
                 int similarity = 0;
-                var keys = _storage.GetKeys(Constants.TEXT_NAME, country);
+                var keys = _storage.GetKeys(Constants.TEXT_NAME);
                 foreach(var key in keys)
                 {
-                    string key_id = key.Substring(key.IndexOf("-")+1);
-                    string key_obj = key.Substring(0, key.IndexOf("-")+1);
-                    if (_storage.Load(key_obj, key_id) == text)
+                    if (_storage.Load(Constants.TEXT_NAME, key) == text)
                     {
                         similarity = 1;
                         break;

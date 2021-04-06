@@ -53,21 +53,22 @@ namespace Common.Storage
 
             return text;
         }
-        public List<string> GetKeys(string obj, string country)
+        public List<string> GetKeys(string obj)
         {
-            IDatabase mainConn = _mainDatabase.GetDatabase();
-            string nameOfSecondaryDB = Constants.DICT_OF_COUNTRIES_TO_REGIONS[country];
-
-            ConnectionMultiplexer secondaryDB = ConnectionMultiplexer.Connect(nameOfSecondaryDB);
-
-            var secondaryConn = secondaryDB.GetServer(nameOfSecondaryDB);
+            //IDatabase mainConn = _mainDatabase.GetDatabase();
+            //string nameOfSecondaryDB = Constants.DICT_OF_COUNTRIES_TO_REGIONS[country];
+            //
+            //ConnectionMultiplexer secondaryDB = ConnectionMultiplexer.Connect(nameOfSecondaryDB);
+            //
+            var mainConn = _mainDatabase.GetServer(Constants.REDIS_HOST);
             List<string> list = new List<string>();
 
-            var dbList = secondaryConn.Keys(pattern: "*" + obj + "*");
+            var dbList = mainConn.Keys(pattern: "*");
 
             foreach(var item in dbList)
             {
                 list.Add(item.ToString());
+                System.Console.WriteLine(item.ToString());
             }
             return list;
         }
