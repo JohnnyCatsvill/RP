@@ -17,7 +17,6 @@ start dotnet run --no-build
 start dotnet run --no-build
 
 cd ..
-cd ..
 
 cd nginx
 start nginx.exe
