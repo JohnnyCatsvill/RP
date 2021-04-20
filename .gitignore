@@ -360,3 +360,9 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+
+# ignore nginx files but nginx/conf/nginx.conf
+nginx/*
+!nginx/conf/
+nginx/conf/*
+!nginx/conf/nginx.conf
