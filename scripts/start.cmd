@@ -6,7 +6,6 @@ cd RankCalculator
 dotnet build
 cd ..
 
-cd ..
 cd Valuator
 start dotnet run --no-build --urls "http://localhost:5001/"
 start dotnet run --no-build --urls "http://localhost:5002/"
