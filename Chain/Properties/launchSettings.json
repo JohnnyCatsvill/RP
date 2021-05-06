@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "Chain": {
+      "commandName": "Project",
+      "commandLineArgs": "1234 localhost 1235 true"
+    }
+  }
+}
