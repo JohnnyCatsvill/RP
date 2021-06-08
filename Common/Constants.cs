@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 
 namespace Common
 {
@@ -15,15 +16,15 @@ namespace Common
         public const string BROKER_CHANNEL_RANK_CALCULATED = "rank_calculated";
 
 
-        public const string DB_RUS = "localhost:6000";
-        public const string DB_EU = "localhost:6001";
-        public const string DB_OTHER = "localhost:6002";
+        public static string DB_RUS = Environment.GetEnvironmentVariable("DB_RUS");
+        public static string DB_EU = Environment.GetEnvironmentVariable("DB_EU");
+        public static string DB_OTHER = Environment.GetEnvironmentVariable("DB_OTHER");
 
         public static Dictionary<string, string> DICT_OF_HOSTS_TO_REGIONS = new()
         {
-            ["localhost:6000"] = "RUS",
-            ["localhost:6001"] = "EU",
-            ["localhost:6002"] = "OTHER"
+            [DB_RUS] = "RUS",
+            [DB_EU] = "EU",
+            [DB_OTHER] = "OTHER"
         };
 
         public static Dictionary<string, string> DICT_OF_COUNTRIES_TO_REGIONS = new()
