@@ -29,10 +29,10 @@ namespace Common
 
         public static Dictionary<string, string> DICT_OF_COUNTRIES_TO_REGIONS = new()
         {
-            ["Russia"] = DB_RUS ,
-            ["France"] = DB_EU ,
-            ["Germany"] = DB_EU ,
-            ["USA"] = DB_OTHER ,
+            ["Russia"] = DB_RUS,
+            ["France"] = DB_EU,
+            ["Germany"] = DB_EU,
+            ["USA"] = DB_OTHER,
             ["India"] = DB_OTHER 
         };
     }
