@@ -1,39 +1,29 @@
-﻿using System;
-using System.Collections.Generic;
-
+﻿
 namespace Common
 {
     public class Constants
     {
-        public const string REDIS_HOST = "localhost:6379";
+        public const string NNMSG_HOST = "localhost:5999";
+        public const string REDIS_HOST = "localhost:5998";
 
-        public const string RANK_NAME = "RANK-";
-        public const string TEXT_NAME = "TEXT-";
-        public const string SIMILARITY_NAME = "SIMILARITY-";
+        public const int RAFT_STATE_LEADER = 0;
+        public const int RAFT_STATE_FOLLOWER = 1;
+        public const int RAFT_STATE_CANDIDATE = 2;
 
-        public const string BROKER_CHANNEL_FOR_RANK_CALCULATION = "calculate_rank";
-        public const string BROKER_CHANNEL_EVENTS_LOGGER = "events_logger";
-        public const string BROKER_CHANNEL_RANK_CALCULATED = "rank_calculated";
+        public const string BROKER_LEADER_CHANNEL = "leader_channel";
+        public const string BROKER_FOLLOWER_CHANNEL = "follower_channel";
 
+        public const string LEADER_SUBSCRIBTION = "0";
+        public const string FOLLOWER_SUBSCRIBTION = "1";
+        public const string REBEL_SUBSCRIBTION = "2";
+        public const string NO_REBEL_SUBSCRIBTION = "3";
+        public const string FOLLOWER_NEED_MORE_SUBSCRIBTION = "4";
+        public const string SEND_MORE_TO_FOLLOWER_SUBSCRIBTION = "5";
 
-        public static string DB_RUS = Environment.GetEnvironmentVariable("DB_RUS");
-        public static string DB_EU = Environment.GetEnvironmentVariable("DB_EU");
-        public static string DB_OTHER = Environment.GetEnvironmentVariable("DB_OTHER");
+        public const int VOTING_TIME = 100;
+        public const int REBELLING_TIME = 1000;
+        public const int HEARTBEAT_TIME = 30;
+        public const int SEND_TIMEOUT = 300;
 
-        public static Dictionary<string, string> DICT_OF_HOSTS_TO_REGIONS = new()
-        {
-            [DB_RUS] = "RUS",
-            [DB_EU] = "EU",
-            [DB_OTHER] = "OTHER"
-        };
-
-        public static Dictionary<string, string> DICT_OF_COUNTRIES_TO_REGIONS = new()
-        {
-            ["Russia"] = DB_RUS,
-            ["France"] = DB_EU,
-            ["Germany"] = DB_EU,
-            ["USA"] = DB_OTHER,
-            ["India"] = DB_OTHER 
-        };
     }
 }

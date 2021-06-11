@@ -4,9 +4,8 @@ namespace Common.Storage
 {
     public interface IStorage
     {
-        public void Save(string obj, string id, string value) { }
-        public string Load(string obj, string id) { return null; }
-        public List<string> GetKeys(string obj) { return null; }
-        public void SaveIdToRegion(string id, string country) { }
+        public void Save(int key, string value) { }
+        public string Load(int key) { return null; }
+        public List<int> GetKeys() { return null; }
     }
 }
