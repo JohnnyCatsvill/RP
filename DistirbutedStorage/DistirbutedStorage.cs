@@ -4,6 +4,7 @@ using Common.Messager;
 using Common.Storage;
 using NNanomsg.Protocols;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Text;
 using System.Text.Json;
 using System.Threading;
@@ -86,6 +87,21 @@ namespace DisturbedStorage
                 () =>
                 {
                     while (_isRunning)
+                    {
+                        if (FollowerGetMessage() == false)
+                        {
+                            RiseARiot();
+                        }
+                    }
+                });
+
+            var candidateThreadSubscriber = new Thread(
+                () =>
+                {
+                    Stopwatch stopwatch = new();
+                    stopwatch.Start();
+
+                    while (stopwatch.ElapsedMilliseconds < Constants.VOTING_TIME)
                     {
                         if (FollowerGetMessage() == false)
                         {
