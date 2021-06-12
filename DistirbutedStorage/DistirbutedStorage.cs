@@ -413,6 +413,10 @@ namespace DisturbedStorage
                         AnarchyIsFallen(data);
                         break;
 
+                    case Constants.LEADER_SUBSCRIBTION:
+                        AnarchyIsFallen(data);
+                        break;
+
                     case Constants.REBEL_MESSAGE_VOTE_SUBSCRIPTION:
                         CheckVote(data);
                         break;
