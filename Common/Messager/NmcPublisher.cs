@@ -9,7 +9,7 @@ namespace Common.Messager
 
     public class NmcPublisher : IPublisher
     {
-        private PublisherSocket _channelPublisher;// = new PublishSocket();
+        private static PublisherSocket _channelPublisher;// = new PublishSocket();
 
         public NmcPublisher(string protocol, string address)
         {

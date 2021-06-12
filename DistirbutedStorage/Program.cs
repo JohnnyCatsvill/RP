@@ -12,10 +12,11 @@ namespace DisturbedStorage
 
             int storageName = int.Parse(System.Console.ReadLine());
             string protocol = "tcp";
-            string address = "127.0.0.1:5999";
+            string address = "127.0.0.1";
+            string port = ":5999";
 
             
-            var calculator = new DistirbutedStorage(new Redis(), storageName, new NmcPublisher(protocol, address), new NmcSubscriber(protocol, address));
+            var calculator = new DistirbutedStorage(new Redis(), storageName, new NmcPublisher(protocol, address+port), new NmcSubscriber(protocol, "*"+port));
             calculator.Run();
 
             while( true)

@@ -178,6 +178,7 @@ namespace DisturbedStorage
                                 {
                                     Thread.Sleep(Constants.SWAP_ROLE_TIME);
                                 }
+                                followerThreadSubscriber.Interrupt();
                                 followerThreadSubscriber.Start();
                             }
                             else if (_raftState == Constants.RAFT_STATE_CANDIDATE)
