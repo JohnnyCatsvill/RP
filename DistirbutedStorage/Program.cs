@@ -12,11 +12,29 @@ namespace DisturbedStorage
 
             int storageName = int.Parse(System.Console.ReadLine());
             string protocol = "tcp";
-            string address = "localhost";
+            string address = "127.0.0.1:5999";
 
-
-            var calculator = new DistirbutedStorage(new Redis(), storageName, new NnPublisher(protocol, address), new NnSubscriber(protocol, address));
+            
+            var calculator = new DistirbutedStorage(new Redis(), storageName, new NmcPublisher(protocol, address), new NmcSubscriber(protocol, address));
             calculator.Run();
+
+            while( true)
+            {
+                string querry = System.Console.ReadLine();
+
+                if (querry.StartsWith("read"))
+                {
+                    querry = querry[5..];
+                    System.Console.WriteLine(calculator.Load(int.Parse(querry)));
+                }
+                else if (querry.StartsWith("write"))
+                {
+                    querry = querry[6..];
+                    int key = int.Parse(querry[0..querry.IndexOf(" ")]);
+                    calculator.Save(key, querry);
+                }
+            }
+
         }
     }
 }

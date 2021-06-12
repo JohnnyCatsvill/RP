@@ -56,18 +56,19 @@ namespace DisturbedStorage
                 FollowerAppendEntries(key, value);
             }
         }
-        public static string Load(int key)
+        public string Load(int key)
         {
             return _storage.Load(key);
         }
 
-        public void Run()
+        public bool Run()
         {
             _isRunning = true;
 
             var leaderThreadPublisher = new Thread(
                 () =>
                 {
+                    System.Console.WriteLine("I AM A LEADER");
                     Stopwatch stopwatch = new();
                     
                     while (_isRunning && stopwatch.ElapsedMilliseconds < Constants.REBELLING_TIME + Constants.VOTING_TIME && _raftState == Constants.RAFT_STATE_LEADER)
@@ -101,6 +102,7 @@ namespace DisturbedStorage
             var followerThreadSubscriber = new Thread(
                 () =>
                 {
+                    System.Console.WriteLine("I AM A FOLLOWER");
                     while (_isRunning && _raftState == Constants.RAFT_STATE_FOLLOWER)
                     {
                         if (FollowerGetMessage() == false)
@@ -113,6 +115,7 @@ namespace DisturbedStorage
             var candidateThreadSubscriber = new Thread(
                 () =>
                 {
+                    System.Console.WriteLine("I AM A CANDIDATE");
                     Stopwatch stopwatch = new();
                     stopwatch.Start();
 
@@ -158,7 +161,8 @@ namespace DisturbedStorage
             var threadController = new Thread(
                 () =>
                 {
-                    var prevRaftState = _raftState;
+                    System.Console.WriteLine("CHOOSING DESTINY");
+                    var prevRaftState = Constants.RAFT_STATE_OFF;
                     while(_isRunning)
                     {
                         if(prevRaftState != _raftState)
@@ -170,6 +174,10 @@ namespace DisturbedStorage
                             }
                             else if (_raftState == Constants.RAFT_STATE_FOLLOWER)
                             {
+                                while(followerThreadSubscriber.IsAlive)
+                                {
+                                    Thread.Sleep(Constants.SWAP_ROLE_TIME);
+                                }
                                 followerThreadSubscriber.Start();
                             }
                             else if (_raftState == Constants.RAFT_STATE_CANDIDATE)
@@ -177,12 +185,15 @@ namespace DisturbedStorage
                                 candidateThreadSubscriber.Start();
                                 candidateThreadPublisher.Start();
                             }
+                            prevRaftState = _raftState;
                         }
                         Thread.Sleep(Constants.SWAP_ROLE_TIME);
                     }
                 });
 
             threadController.Start();
+
+            return true;
         }
 
         public void Stop()
@@ -192,10 +203,27 @@ namespace DisturbedStorage
 
         public bool LeaderAppendEntries()
         {
-            LeaderNewAppendMessage message = new(_term, _log.Count - 2, _log[_log.Count - 1], _log[_log.Count - 2]);
+            if (_log.Count == 0)
+            {
+                LeaderNewAppendMessage message = new(_term, _log.Count - 2, new LogBit(0, "0"), new LogBit(0, "0"));
 
-            var text = JsonSerializer.Serialize(message);
-            return _publisher.Send(Constants.LEADER_SUBSCRIBTION, text);
+                var text = JsonSerializer.Serialize(message);
+                return _publisher.Send(Constants.LEADER_SUBSCRIBTION, text);
+            }
+            else if (_log.Count == 1)
+            {
+                LeaderNewAppendMessage message = new(_term, _log.Count - 2, _log[_log.Count - 1], _log[_log.Count - 1]);
+
+                var text = JsonSerializer.Serialize(message);
+                return _publisher.Send(Constants.LEADER_SUBSCRIBTION, text);
+            }
+            else
+            {
+                LeaderNewAppendMessage message = new(_term, _log.Count - 2, _log[_log.Count - 1], _log[_log.Count - 2]);
+
+                var text = JsonSerializer.Serialize(message);
+                return _publisher.Send(Constants.LEADER_SUBSCRIBTION, text);
+            }
         }
 
         public void FollowerAppendEntries(int key, string value)
@@ -344,8 +372,10 @@ namespace DisturbedStorage
         public void RiseARiot()
         {
             _raftState = Constants.RAFT_STATE_CANDIDATE;
-
+            votingResults[_disturbedStorageName] = 1;
             RebelMessage message = new(_term + 1, _disturbedStorageName);
+
+            _publisher.Send(Constants.REBEL_SUBSCRIBTION, JsonSerializer.Serialize(message));
         }
 
         public void Vote(string data)
@@ -365,6 +395,8 @@ namespace DisturbedStorage
             LeaderNewAppendMessage message = JsonSerializer.Deserialize<LeaderNewAppendMessage>(data);
 
             uint messageTerm = message._term;
+
+            System.Console.WriteLine("Get Heartbeat " + message._curData._key+ "-" + message._curData._value);
 
             if (message._term >= _term)
             {
