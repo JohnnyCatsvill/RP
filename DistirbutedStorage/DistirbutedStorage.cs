@@ -127,14 +127,10 @@ namespace DisturbedStorage
                 {
                     Stopwatch stopwatch = new();
                     stopwatch.Start();
-                    int oldAmountOfVotes = 0;
 
                     while (stopwatch.ElapsedMilliseconds < Constants.VOTING_TIME && _raftState == Constants.RAFT_STATE_CANDIDATE)
                     {
-                        if(oldAmountOfVotes != votingResults[_disturbedStorageName])
-                        {
-                            CandidateHeartbeat();
-                        }
+                        CandidateHeartbeat();
                         Thread.Sleep(Constants.HEARTBEAT_TIME);
                     }
 
@@ -230,10 +226,6 @@ namespace DisturbedStorage
                 {
                     LeaderSendDopMessage(data);
                 }
-                else if (subscription == Constants.REBEL_SUBSCRIBTION)
-                {
-                    _publisher.Send(Constants.NO_REBEL_SUBSCRIBTION, "f u");
-                }
             }
         }
 
@@ -260,7 +252,7 @@ namespace DisturbedStorage
             {
                 switch (situation)
                 {
-                    case Constants.LEADER_SUBSCRIBTION: 
+                    case Constants.LEADER_SUBSCRIBTION: //внутри реализовано и получений недостающией инфы
                         FollowersAddNewInstances(data);
                         break;
 
@@ -351,7 +343,9 @@ namespace DisturbedStorage
 
         public void RiseARiot()
         {
-            //ping leader is dead to all
+            _raftState = Constants.RAFT_STATE_CANDIDATE;
+
+            RebelMessage message = new(_term + 1, _disturbedStorageName);
         }
 
         public void Vote(string data)
@@ -409,10 +403,6 @@ namespace DisturbedStorage
             {
                 switch (situation)
                 {
-                    case Constants.NO_REBEL_SUBSCRIBTION:
-                        AnarchyIsFallen(data);
-                        break;
-
                     case Constants.LEADER_SUBSCRIBTION:
                         AnarchyIsFallen(data);
                         break;
