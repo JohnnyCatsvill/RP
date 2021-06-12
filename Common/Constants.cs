@@ -17,8 +17,10 @@ namespace Common
         public const string FOLLOWER_SUBSCRIBTION = "1";
         public const string REBEL_SUBSCRIBTION = "2";
         public const string NO_REBEL_SUBSCRIBTION = "3";
-        public const string FOLLOWER_NEED_MORE_SUBSCRIBTION = "4";
+        public const string FOLLOWER_ASK_FOR_DOP_DATA = "4";
         public const string SEND_MORE_TO_FOLLOWER_SUBSCRIBTION = "5";
+
+        public const string REBEL_MESSAGE_VOTE_FOR_SUBSCRIPTION = "6";
 
         public const int VOTING_TIME = 100;
         public const int REBELLING_TIME = 1000;
