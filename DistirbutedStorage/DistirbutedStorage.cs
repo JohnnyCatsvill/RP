@@ -2,10 +2,8 @@
 using Common;
 using Common.Messager;
 using Common.Storage;
-using NNanomsg.Protocols;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Text;
 using System.Text.Json;
 using System.Threading;
 
@@ -25,7 +23,7 @@ namespace DisturbedStorage
         IPublisher _publisher;
         ISubscriber _subscriber;
 
-        private List<KeyValuePair<int, int>> votingResults = new();
+        private Dictionary<int, int> votingResults = new();
 
         public DistirbutedStorage(IStorage storage, int disturbedStorageName, IPublisher publisher, ISubscriber subscriber)  
         {
@@ -42,6 +40,10 @@ namespace DisturbedStorage
             _subscriber.AddSubscription(Constants.LEADER_SUBSCRIBTION);
             _subscriber.AddSubscription(Constants.REBEL_SUBSCRIBTION);
             _subscriber.AddSubscription(Constants.NO_REBEL_SUBSCRIBTION);
+            _subscriber.AddSubscription(Constants.REBEL_MESSAGE_VOTE_SUBSCRIPTION);
+            _subscriber.AddSubscription(Constants.REBEL_MESSAGE_VOTE_RESULTS);
+            _subscriber.AddSubscription(Constants.FOLLOWER_ASK_FOR_DOP_DATA);
+            _subscriber.AddSubscription(Constants.SEND_MORE_TO_FOLLOWER_SUBSCRIBTION);
         }
 
         public void Save(int key, string value)
@@ -66,17 +68,30 @@ namespace DisturbedStorage
             var leaderThreadPublisher = new Thread(
                 () =>
                 {
-                    while (_isRunning)
+                    Stopwatch stopwatch = new();
+                    
+                    while (_isRunning && stopwatch.ElapsedMilliseconds < Constants.REBELLING_TIME + Constants.VOTING_TIME && _raftState == Constants.RAFT_STATE_LEADER)
                     {
-                        LeaderAppendEntries();
+                        bool isNetworkFine = LeaderAppendEntries();
+
+                        if (!isNetworkFine && !stopwatch.IsRunning)
+                        {
+                            stopwatch.Start();
+                        }
+                        else if (isNetworkFine && stopwatch.IsRunning)
+                        {
+                            stopwatch.Reset();
+                        }
+
                         Thread.Sleep(Constants.HEARTBEAT_TIME);
                     }
+                    _raftState = Constants.RAFT_STATE_FOLLOWER;
                 });
 
             var leaderThreadSubscriber = new Thread(
                 () =>
                 {
-                    while (_isRunning)
+                    while (_isRunning && _raftState == Constants.RAFT_STATE_LEADER)
                     {
                         LeaderGetMessage();
                     }
@@ -86,7 +101,7 @@ namespace DisturbedStorage
             var followerThreadSubscriber = new Thread(
                 () =>
                 {
-                    while (_isRunning)
+                    while (_isRunning && _raftState == Constants.RAFT_STATE_FOLLOWER)
                     {
                         if (FollowerGetMessage() == false)
                         {
@@ -101,16 +116,77 @@ namespace DisturbedStorage
                     Stopwatch stopwatch = new();
                     stopwatch.Start();
 
-                    while (stopwatch.ElapsedMilliseconds < Constants.VOTING_TIME)
+                    while (stopwatch.ElapsedMilliseconds < Constants.VOTING_TIME && _raftState == Constants.RAFT_STATE_CANDIDATE)
                     {
-                        if (FollowerGetMessage() == false)
-                        {
-                            RiseARiot();
-                        }
+                        CandidateGetMessage();
                     }
                 });
 
-            clientThread.Start();
+            var candidateThreadPublisher = new Thread(
+                () =>
+                {
+                    Stopwatch stopwatch = new();
+                    stopwatch.Start();
+                    int oldAmountOfVotes = 0;
+
+                    while (stopwatch.ElapsedMilliseconds < Constants.VOTING_TIME && _raftState == Constants.RAFT_STATE_CANDIDATE)
+                    {
+                        if(oldAmountOfVotes != votingResults[_disturbedStorageName])
+                        {
+                            CandidateHeartbeat();
+                        }
+                        Thread.Sleep(Constants.HEARTBEAT_TIME);
+                    }
+
+                    bool isWeWin = true;
+
+                    foreach(var pair in votingResults)
+                    {
+                        if(pair.Key != _disturbedStorageName && pair.Value >= votingResults[_disturbedStorageName])
+                        {
+                            isWeWin = false;
+                        }
+                    }
+
+                    if(isWeWin)
+                    {
+                        _raftState = Constants.RAFT_STATE_LEADER;
+                    }
+                    else
+                    {
+                        _raftState = Constants.RAFT_STATE_FOLLOWER;
+                    }
+
+                });
+
+            var threadController = new Thread(
+                () =>
+                {
+                    var prevRaftState = _raftState;
+                    while(_isRunning)
+                    {
+                        if(prevRaftState != _raftState)
+                        {
+                            if(_raftState == Constants.RAFT_STATE_LEADER)
+                            {
+                                leaderThreadPublisher.Start();
+                                leaderThreadSubscriber.Start();
+                            }
+                            else if (_raftState == Constants.RAFT_STATE_FOLLOWER)
+                            {
+                                followerThreadSubscriber.Start();
+                            }
+                            else if (_raftState == Constants.RAFT_STATE_CANDIDATE)
+                            {
+                                candidateThreadSubscriber.Start();
+                                candidateThreadPublisher.Start();
+                            }
+                        }
+                        Thread.Sleep(Constants.SWAP_ROLE_TIME);
+                    }
+                });
+
+            threadController.Start();
         }
 
         public void Stop()
@@ -118,19 +194,19 @@ namespace DisturbedStorage
             _isRunning = false; //thread скорее сделает эту хрень бесполезной
         }
 
-        public void LeaderAppendEntries()
+        public bool LeaderAppendEntries()
         {
             LeaderNewAppendMessage message = new(_term, _log.Count - 2, _log[_log.Count - 1], _log[_log.Count - 2]);
-            
+
             var text = JsonSerializer.Serialize(message);
-            _publisher.Send(Constants.LEADER_SUBSCRIBTION, text);
+            return _publisher.Send(Constants.LEADER_SUBSCRIBTION, text);
         }
 
         public void FollowerAppendEntries(int key, string value)
         { 
             LogBit logBit = new(key, value);
-            FollowerNewAppendMessage message = new(_term, logBit); 
-
+            FollowerNewAppendMessage message = new(_term, logBit);
+            
             string text = JsonSerializer.Serialize(message);
             _publisher.Send(Constants.FOLLOWER_SUBSCRIBTION, text);
         }
@@ -190,14 +266,6 @@ namespace DisturbedStorage
 
                     case Constants.REBEL_SUBSCRIBTION: 
                         Vote(data);
-                        break;
-
-                    case Constants.REBEL_MESSAGE_VOTE_RESULTS: 
-                        CheckVotings(data);
-                        break;
-
-                    case Constants.NO_REBEL_SUBSCRIBTION:
-                        AnarchyIsFallen(data);
                         break;
 
                     default:
@@ -329,15 +397,56 @@ namespace DisturbedStorage
         {
             _raftState = Constants.RAFT_STATE_FOLLOWER;
         }
-        public void CheckVotings(string data)
-        {
-            VoteResultsMessage resultsMessage = JsonSerializer.Deserialize<VoteResultsMessage>(data);
 
-            if (resultsMessage._term > _term)
+        public bool CandidateGetMessage()
+        {
+            string situation = "";
+            string data = "";
+
+            bool success = _subscriber.Recieve(ref data, ref situation);
+
+            if (success)
             {
-                KeyValuePair<int, int> keyValuePair = new KeyValuePair<int, int>(resultsMessage._candidate, resultsMessage._amountOfVoices);
-                votingResults.Add(keyValuePair);
+                switch (situation)
+                {
+                    case Constants.NO_REBEL_SUBSCRIBTION:
+                        AnarchyIsFallen(data);
+                        break;
+
+                    case Constants.REBEL_MESSAGE_VOTE_SUBSCRIPTION:
+                        CheckVote(data);
+                        break;
+
+                    default:
+                        break;
+                }
+                return true;
             }
+            else
+            {
+                return false;
+            }
+        }
+
+        public void CheckVote(string data)
+        {
+            VoteMessage voteMessage = JsonSerializer.Deserialize<VoteMessage>(data);
+            if(votingResults.ContainsKey(voteMessage._voteFor))
+            {
+                votingResults[voteMessage._voteFor] += 1;
+            }
+            else
+            {
+                votingResults[voteMessage._voteFor] = 1;
+            }
+        }
+
+        public void CandidateHeartbeat()
+        {
+            VoteResultsMessage message = new(_term, votingResults[_disturbedStorageName], _disturbedStorageName);
+
+            var text = JsonSerializer.Serialize(message);
+            _publisher.Send(Constants.LEADER_SUBSCRIBTION, text);
         }
     }
 }
