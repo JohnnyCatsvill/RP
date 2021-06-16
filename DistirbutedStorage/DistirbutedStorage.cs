@@ -204,6 +204,7 @@ namespace DisturbedStorage
 
         public bool LeaderAppendEntries()
         {
+            System.Console.WriteLine("Heartbeat");
             if (_log.Count == 0)
             {
                 LeaderNewAppendMessage message = new(_term, _log.Count - 2, new LogBit(0, "0"), new LogBit(0, "0"));
@@ -276,6 +277,7 @@ namespace DisturbedStorage
             string data = "";
 
             bool success = _subscriber.Recieve(ref data, ref situation);
+            System.Console.WriteLine("GetData" + success);
 
             if (success)
             {

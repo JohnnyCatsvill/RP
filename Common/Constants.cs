@@ -23,10 +23,10 @@ namespace Common
         public const string REBEL_MESSAGE_VOTE_SUBSCRIPTION = "6";
         public const string REBEL_MESSAGE_VOTE_RESULTS = "7";
 
-        public const int VOTING_TIME = 100;
-        public const int REBELLING_TIME = 1000;
-        public const int HEARTBEAT_TIME = 30;
-        public const int SEND_TIMEOUT = 300;
+        public const int VOTING_TIME = 1000;
+        public const int REBELLING_TIME = 10000;
+        public const int HEARTBEAT_TIME = 300;
+        public const int SEND_TIMEOUT = 3000;
 
         public const int SWAP_ROLE_TIME = 50;
 

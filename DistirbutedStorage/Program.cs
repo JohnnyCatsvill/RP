@@ -9,14 +9,21 @@ namespace DisturbedStorage
         private static async Task Main(string[] args)
         {
             System.Console.WriteLine("Enter unique storage name <int>");
-
             int storageName = int.Parse(System.Console.ReadLine());
+
+            System.Console.WriteLine("Enter unique address name <int>");
+            string address = System.Console.ReadLine();
+
+            System.Console.WriteLine("Enter unique port name <int>");
+            int portName = int.Parse(System.Console.ReadLine());
+
+
             string protocol = "tcp";
-            string address = "127.0.0.1";
-            string port = ":5999";
+            //string address = "localhost";
+            //string port = ":5999";
 
             
-            var calculator = new DistirbutedStorage(new Redis(), storageName, new NmcPublisher(protocol, address+port), new NmcSubscriber(protocol, "*"+port));
+            var calculator = new DistirbutedStorage(new Redis(), storageName, new NmqPub(protocol, address+":"+portName), new NmqSub(protocol, address + ":" + portName));
             calculator.Run();
 
             while( true)

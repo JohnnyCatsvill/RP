@@ -1,35 +1,32 @@
-﻿
-using NetMQ;
+﻿using NetMQ;
 using NetMQ.Sockets;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace Common.Messager
 {
-    
-
-    public class NmcPublisher : IPublisher
+     public class NmqPub : IPublisher
     {
-        private static PublisherSocket _channelPublisher;// = new PublishSocket();
+        private static PushSocket _channelPublisher = new();// = new PublishSocket();
 
-        public NmcPublisher(string protocol, string address)
+        public NmqPub(string protocol, string address)
         {
-            _channelPublisher = new PublisherSocket();
             _channelPublisher.Connect(protocol + "://" + address);
         }
 
         public void SetTimeout(int milliseconds)
         {
             _channelPublisher.Options.HeartbeatTimeout = System.TimeSpan.FromMilliseconds(milliseconds);
-            //_channelPublisher.Options.SendTimeout = System.TimeSpan.FromMilliseconds(milliseconds);
         }
 
         public bool Send(string channel, string message)
         {
             try
             {
-                //var text = channel + MessagerConstants.CHANNEL_END + message;
-                //var data = Encoding.ASCII.GetBytes(text);
-                _channelPublisher.SendMoreFrame(channel).SendFrame(message);
+                _channelPublisher.SendFrame(channel + MessagerConstants.CHANNEL_END + message);
                 return true;
             }
             catch (NetMQ.NetMQException e)

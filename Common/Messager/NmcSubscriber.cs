@@ -25,7 +25,7 @@ namespace Common.Messager
         public NmcSubscriber(string protocol, string address)
         {
             _channelSubscription = new SubscriberSocket();
-            _channelSubscription.Connect(protocol + "://" + address);
+            _channelSubscription.Bind(protocol + "://" + address);
         }
 
         public void SetTimeout(int milliseconds)
