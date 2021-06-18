@@ -11,11 +11,11 @@ namespace DisturbedStorage
             System.Console.WriteLine("Enter unique storage name <int>");
             int storageName = int.Parse(System.Console.ReadLine());
 
-            System.Console.WriteLine("Enter unique address name <int>");
-            string address = System.Console.ReadLine();
+            System.Console.WriteLine("Enter unique pub port name <int>");
+            string addressPubs = System.Console.ReadLine();
 
-            System.Console.WriteLine("Enter unique port name <int>");
-            int portName = int.Parse(System.Console.ReadLine());
+            System.Console.WriteLine("Enter unique sub port name <int>");
+            int addressSubs = int.Parse(System.Console.ReadLine());
 
 
             string protocol = "tcp";
@@ -23,7 +23,7 @@ namespace DisturbedStorage
             //string port = ":5999";
 
             
-            var calculator = new DistirbutedStorage(new Redis(), storageName, new NmqPub(protocol, address+":"+portName), new NmqSub(protocol, address + ":" + portName));
+            var calculator = new DistirbutedStorage(new Redis(), storageName, new NmcPublisher(protocol, "localhost"+":"+addressPubs), new NmcSubscriber(protocol, "localhost" + ":" + addressSubs));
             calculator.Run();
 
             while( true)

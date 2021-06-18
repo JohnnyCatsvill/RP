@@ -50,6 +50,7 @@ namespace DisturbedStorage
         {
             _log.Add(new LogBit(key, value));
             _storage.Save(key, value);
+            _logChanged = true;
 
             if(_raftState == Constants.RAFT_STATE_FOLLOWER)
             {
@@ -167,26 +168,28 @@ namespace DisturbedStorage
                     {
                         if(prevRaftState != _raftState)
                         {
-                            if(_raftState == Constants.RAFT_STATE_LEADER)
+                            if (!candidateThreadSubscriber.IsAlive && 
+                                !candidateThreadPublisher.IsAlive && 
+                                !leaderThreadPublisher.IsAlive && 
+                                !leaderThreadSubscriber.IsAlive && 
+                                !followerThreadSubscriber.IsAlive)
                             {
-                                leaderThreadPublisher.Start();
-                                leaderThreadSubscriber.Start();
-                            }
-                            else if (_raftState == Constants.RAFT_STATE_FOLLOWER)
-                            {
-                                while(followerThreadSubscriber.IsAlive)
+                                if(_raftState == Constants.RAFT_STATE_LEADER)
                                 {
-                                    Thread.Sleep(Constants.SWAP_ROLE_TIME);
+                                    leaderThreadPublisher.Start();
+                                    leaderThreadSubscriber.Start();
                                 }
-                                followerThreadSubscriber.Interrupt();
-                                followerThreadSubscriber.Start();
+                                else if (_raftState == Constants.RAFT_STATE_FOLLOWER)
+                                {
+                                    followerThreadSubscriber.Start();
+                                }
+                                else if (_raftState == Constants.RAFT_STATE_CANDIDATE)
+                                {
+                                    candidateThreadSubscriber.Start();
+                                    candidateThreadPublisher.Start();
+                                }
+                                prevRaftState = _raftState;
                             }
-                            else if (_raftState == Constants.RAFT_STATE_CANDIDATE)
-                            {
-                                candidateThreadSubscriber.Start();
-                                candidateThreadPublisher.Start();
-                            }
-                            prevRaftState = _raftState;
                         }
                         Thread.Sleep(Constants.SWAP_ROLE_TIME);
                     }
@@ -204,28 +207,24 @@ namespace DisturbedStorage
 
         public bool LeaderAppendEntries()
         {
-            System.Console.WriteLine("Heartbeat");
+            //System.Console.WriteLine("Heartbeat");
+            LeaderNewAppendMessage message;
+
             if (_log.Count == 0)
             {
-                LeaderNewAppendMessage message = new(_term, _log.Count - 2, new LogBit(0, "0"), new LogBit(0, "0"));
-
-                var text = JsonSerializer.Serialize(message);
-                return _publisher.Send(Constants.LEADER_SUBSCRIBTION, text);
+                message = new(_term, _log.Count - 2, new LogBit(0, "0"), new LogBit(0, "0"), _logChanged);
             }
             else if (_log.Count == 1)
             {
-                LeaderNewAppendMessage message = new(_term, _log.Count - 2, _log[_log.Count - 1], _log[_log.Count - 1]);
-
-                var text = JsonSerializer.Serialize(message);
-                return _publisher.Send(Constants.LEADER_SUBSCRIBTION, text);
+                message = new(_term, _log.Count - 2, _log[_log.Count - 1], new LogBit(0, "0"), _logChanged);
             }
             else
             {
-                LeaderNewAppendMessage message = new(_term, _log.Count - 2, _log[_log.Count - 1], _log[_log.Count - 2]);
-
-                var text = JsonSerializer.Serialize(message);
-                return _publisher.Send(Constants.LEADER_SUBSCRIBTION, text);
+                message = new(_term, _log.Count - 2, _log[_log.Count - 1], _log[_log.Count - 2], _logChanged);
             }
+            var text = JsonSerializer.Serialize(message);
+            _logChanged = false;
+            return _publisher.Send(Constants.LEADER_SUBSCRIBTION, text);
         }
 
         public void FollowerAppendEntries(int key, string value)
@@ -248,12 +247,15 @@ namespace DisturbedStorage
             {
                 if (subscription == Constants.FOLLOWER_SUBSCRIBTION)
                 {
+                    System.Console.WriteLine("get fol message");
                     FollowerNewAppendMessage message = JsonSerializer.Deserialize<FollowerNewAppendMessage>(data);
                     _log.Add(message._data);
+                    _logChanged = true;
                 }
 
                 else if (subscription == Constants.FOLLOWER_ASK_FOR_DOP_DATA)
                 {
+                    System.Console.WriteLine("get fol dop message");
                     LeaderSendDopMessage(data);
                 }
             }
@@ -277,7 +279,7 @@ namespace DisturbedStorage
             string data = "";
 
             bool success = _subscriber.Recieve(ref data, ref situation);
-            System.Console.WriteLine("GetData" + success);
+            //System.Console.WriteLine("GetData" + success);
 
             if (success)
             {
@@ -399,21 +401,29 @@ namespace DisturbedStorage
 
             uint messageTerm = message._term;
 
-            System.Console.WriteLine("Get Heartbeat " + message._curData._key+ "-" + message._curData._value);
+            //System.Console.WriteLine("Get Heartbeat " + message._curData._key+ "-" + message._curData._value);
 
-            if (message._term >= _term)
+            if (message._term >= _term && message._anyChange)
             {
-                int currentPrevIndex = _log.Count - 1;
-                LogBit prevLogBit = _log[currentPrevIndex];
-
-                if (currentPrevIndex == message._prevIndex && prevLogBit == message._prevData)
+                if(message._prevIndex == -2)
                 {
                     _log.Add(message._curData);
                 }
-                else
+                else if(message._prevIndex >= -1)
                 {
-                    AskMoreData();
+                    int currentPrevIndex = _log.Count - 1;
+                    LogBit prevLogBit = _log[currentPrevIndex];
+
+                    if (currentPrevIndex == message._prevIndex && prevLogBit == message._prevData)
+                    {
+                        _log.Add(message._curData);
+                    }
+                    else
+                    {
+                        AskMoreData();
+                    }
                 }
+
 
                 if (message._term > _term)
                 {

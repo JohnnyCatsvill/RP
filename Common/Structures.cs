@@ -24,9 +24,11 @@ namespace Common
         public int _prevIndex { get; }
         public LogBit _curData { get; }
         public LogBit _prevData { get; }
+        public bool _anyChange { get; }
 
-        public LeaderNewAppendMessage(uint term, int previousIndex, LogBit currentData, LogBit previousData)
+        public LeaderNewAppendMessage(uint term, int previousIndex, LogBit currentData, LogBit previousData, bool anyChange)
         {
+            _anyChange = anyChange;
             _term = term;
             _prevIndex = previousIndex;
             _curData = currentData;
